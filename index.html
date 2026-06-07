@@ -110,8 +110,8 @@
     .lp-divider { height: 1px; background: var(--border); margin: 14px 16px 0; }
 
     .lp-title {
-      font-size: 10px; font-weight: 700; color: var(--muted2);
-      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+      font-size: 12px; font-weight: 800; color: var(--text2);
+      letter-spacing: .3px; margin-bottom: 10px;
       display: flex; align-items: center; gap: 6px;
     }
     .lp-title::before { content: '◆'; font-size: 7px; color: var(--accent-amber); }
@@ -153,8 +153,8 @@
       padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
     }
     .stat-row:last-child { border-bottom: none; }
-    .stat-row .stat-label { color: var(--muted); }
-    .stat-row .stat-val { font-weight: 700; }
+    .stat-row .stat-label { color: var(--muted); font-size: 13px; }
+    .stat-row .stat-val { font-weight: 800; font-size: 14px; }
     .stat-row .stat-val.amber { color: var(--accent-amber); }
     .stat-row .stat-val.blue { color: var(--accent-blue); }
     .stat-row .stat-val.dark { color: var(--text); }
@@ -204,8 +204,8 @@
       margin-bottom: 14px;
     }
     .view-header-left { display: flex; align-items: center; gap: 8px; }
-    .view-title { font-size: 14px; font-weight: 700; color: var(--text2); }
-    .view-hint { font-size: 11px; color: var(--muted2); }
+    .view-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -.3px; }
+    .view-hint { font-size: 12px; color: var(--muted2); }
 
     .refresh-btn {
       display: flex; align-items: center; gap: 6px;
@@ -251,9 +251,9 @@
       box-shadow: var(--shadow-sm);
     }
     .co-group-header .co-name-row { display: flex; align-items: center; gap: 8px; }
-    .co-icon { font-size: 14px; }
-    .co-name-text { font-size: 14px; font-weight: 700; color: var(--text); }
-    .co-group-stats { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+    .co-icon { font-size: 15px; }
+    .co-name-text { font-size: 15px; font-weight: 800; color: var(--text); }
+    .co-group-stats { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--muted); }
     .co-group-stats .csv { font-weight: 700; }
     .co-group-stats .csv.amber { color: var(--accent-amber); }
     .co-group-stats .csv.blue { color: var(--accent-blue); }
@@ -266,14 +266,14 @@
       border-top: none; border-radius: 0 0 var(--radius) var(--radius);
       overflow: hidden;
     }
-    .rec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .rec-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .rec-table th {
-      background: var(--surface2); padding: 8px 12px; text-align: left;
-      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .3px;
+      background: var(--surface2); padding: 9px 12px; text-align: left;
+      font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .3px;
       border-bottom: 1px solid var(--border); white-space: nowrap;
     }
     .rec-table th:last-child, .rec-table td:last-child { text-align: right; }
-    .rec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+    .rec-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; font-size: 13px; }
     .rec-table tr:last-child td { border-bottom: none; }
     .rec-table tr:hover td { background: var(--surface2); }
 
@@ -296,6 +296,43 @@
     .rec-td-free { color: var(--accent-blue); font-size: 11px; background: rgba(37,99,235,.07); padding: 2px 7px; border-radius: 10px; }
     .del-btn { background: none; border: none; color: var(--muted2); font-size: 15px; cursor: pointer; padding: 2px 6px; transition: color .15s; }
     .del-btn:hover { color: var(--accent-red); }
+    .edit-btn { background: none; border: none; color: var(--muted2); font-size: 13px; cursor: pointer; padding: 2px 6px; transition: color .15s; border-radius: 4px; }
+    .edit-btn:hover { color: var(--accent-blue); background: rgba(37,99,235,.08); }
+    .action-cell { display: flex; align-items: center; gap: 2px; justify-content: flex-end; white-space: nowrap; }
+
+    /* Edit record modal */
+    #edit-modal-overlay .modal { width: 520px; }
+    .edit-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .edit-modal-grid.col1 { grid-template-columns: 1fr; }
+    .edit-modal-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+    .edit-field label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 5px; }
+    .edit-field input, .edit-field select {
+      width: 100%; padding: 9px 12px; background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-family: inherit;
+      outline: none; appearance: none; -webkit-appearance: none; transition: border-color .15s;
+    }
+    .edit-field input:focus, .edit-field select:focus { border-color: var(--accent-blue); background: #fff; }
+    .edit-field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px;
+    }
+    .edit-field input[readonly] { color: var(--muted); opacity: .7; cursor: default; }
+    .edit-section-title { font-size: 12px; font-weight: 800; color: var(--text); margin: 14px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .edit-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .edit-free-toggle {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; font-size: 13px; color: var(--text2); user-select: none; transition: all .15s;
+    }
+    .edit-free-toggle.on { border-color: var(--accent-blue); background: rgba(37,99,235,.04); }
+    .edit-chkbox {
+      width: 17px; height: 17px; border: 2px solid var(--border2); border-radius: 4px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; transition: all .15s; color: #fff; font-weight: 700;
+    }
+    .edit-free-toggle.on .edit-chkbox { background: var(--accent-blue); border-color: var(--accent-blue); }
+    .edit-btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    .edit-btn-row .btn { flex: 1; }
 
     .table-hint { font-size: 11px; color: var(--muted2); padding: 8px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
 
@@ -340,8 +377,8 @@
 
     .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
     .form-section-title {
-      font-size: 10px; font-weight: 700; color: var(--muted2); letter-spacing: 1px;
-      text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 800; color: var(--text); letter-spacing: -.1px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
     }
     .form-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
@@ -776,6 +813,48 @@
   </div>
 </div>
 
+<!-- 编辑记录弹窗 -->
+<div class="modal-overlay" id="edit-modal-overlay" onclick="closeEditModalOutside(event)">
+  <div class="modal" id="edit-modal">
+    <div class="modal-title">
+      <span>✏️ 编辑记录</span>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="edit-section-title">基本信息</div>
+    <div class="edit-modal-grid">
+      <div class="edit-field"><label>日期</label><input type="date" id="ef-date" style="color-scheme:light"></div>
+      <div class="edit-field"><label>销货单号</label><input type="text" id="ef-order" placeholder="如 0113461"></div>
+    </div>
+    <div class="edit-modal-grid col1">
+      <div class="edit-field"><label>对接公司</label><select id="ef-company" onchange="onEditCompanyChange()"></select></div>
+    </div>
+    <div class="edit-modal-grid col1">
+      <div class="edit-field"><label>备注</label><input type="text" id="ef-remark" placeholder="可选备注信息"></div>
+    </div>
+    <div class="edit-section-title">加工详情</div>
+    <div class="edit-modal-grid col1">
+      <div class="edit-field"><label>加工内容</label><select id="ef-type" onchange="onEditTypeChange()"></select></div>
+    </div>
+    <div class="edit-modal-grid">
+      <div class="edit-field"><label>型号</label><input type="text" id="ef-model" placeholder="输入型号"></div>
+      <div class="edit-field"><label>编号</label><input type="text" id="ef-code" placeholder="布料编号"></div>
+    </div>
+    <div class="edit-modal-grid col3">
+      <div class="edit-field"><label>米数</label><input type="number" id="ef-meters" placeholder="0" inputmode="decimal" oninput="calcEditTotal()"></div>
+      <div class="edit-field"><label>单价</label><input type="number" id="ef-unit" placeholder="自动" step="0.01" inputmode="decimal" oninput="calcEditTotal()"></div>
+      <div class="edit-field"><label>小计</label><input type="number" id="ef-total" placeholder="—" readonly></div>
+    </div>
+    <div class="edit-free-toggle" id="edit-free-toggle" onclick="toggleEditFree()">
+      <div class="edit-chkbox" id="edit-chkbox">✓</div>
+      <span>不计价格（免费项目）</span>
+    </div>
+    <div class="edit-btn-row">
+      <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveEditRecord()">💾 保存修改</button>
+    </div>
+  </div>
+</div>
+
 <!-- 底部导航栏（原版四按钮） -->
 <div class="bottom-nav" id="bottom-nav">
   <div class="nav-item" id="nav-entry" onclick="switchView('entry')">
@@ -1070,7 +1149,7 @@
           <table class="rec-table">
             <thead><tr>
               <th>销货单号</th><th>加工内容</th><th>型号 / 备注</th>
-              <th>米数 (m)</th><th>单价 (¥/m)</th><th>金额 (¥)</th><th></th>
+              <th>米数 (m)</th><th>单价 (¥/m)</th><th>金额 (¥)</th><th style="text-align:right">操作</th>
             </tr></thead>
             <tbody>`;
 
@@ -1093,7 +1172,10 @@
             <td class="rec-td-num">${r.meters.toFixed(2)}</td>
             <td class="rec-td-num">${r.free ? '—' : (r.unitPrice||'—')}</td>
             <td class="rec-td-amt">${r.free ? '<span class="rec-td-free">免费</span>' : '¥'+r.total}</td>
-            <td><button class="del-btn" onclick="delRecord(${r.id});event.stopPropagation()">×</button></td>
+            <td><div class="action-cell">
+              <button class="edit-btn" onclick="openEditModal(${r.id});event.stopPropagation()" title="编辑">✏️</button>
+              <button class="del-btn" onclick="delRecord(${r.id});event.stopPropagation()" title="删除">×</button>
+            </div></td>
           </tr>`;
         });
       });
@@ -1300,7 +1382,137 @@
     saveRecords(); renderRecordsView(); showToast('已删除');
   };
 
-  // ── EXPORT ────────────────────────────
+  // ── EDIT RECORD ───────────────────────
+  let editingRecordId = null;
+  let isEditFree = false;
+
+  window.openEditModal = function(id) {
+    const r = records.find(rec => rec.id === id);
+    if (!r) { showToast('找不到该记录'); return; }
+    editingRecordId = id;
+
+    // Populate company dropdown
+    const efCompany = document.getElementById('ef-company');
+    efCompany.innerHTML = '<option value="">— 请选择公司 —</option>';
+    companies.forEach(c => {
+      const o = document.createElement('option'); o.value=c.id; o.textContent=c.name; efCompany.appendChild(o);
+    });
+    efCompany.value = r.companyId || '';
+
+    // Populate type dropdown based on company
+    const co = companies.find(c => c.id === r.companyId);
+    const efType = document.getElementById('ef-type');
+    efType.innerHTML = '<option value="">— 选择加工内容 —</option>';
+    if (co) {
+      co.prices.forEach(p => {
+        const o = document.createElement('option'); o.value=p.type; o.textContent=p.type; efType.appendChild(o);
+      });
+    }
+    // Also ensure the saved type is an option even if not in current company
+    if (r.type && !efType.querySelector(`option[value="${r.type}"]`)) {
+      const o = document.createElement('option'); o.value=r.type; o.textContent=r.type; efType.appendChild(o);
+    }
+
+    // Fill fields
+    document.getElementById('ef-date').value = r.date || '';
+    document.getElementById('ef-order').value = r.order || '';
+    document.getElementById('ef-remark').value = r.remark || '';
+    efType.value = r.type || '';
+    document.getElementById('ef-model').value = r.model || '';
+    document.getElementById('ef-code').value = r.code || '';
+    document.getElementById('ef-meters').value = r.meters || '';
+    document.getElementById('ef-unit').value = r.free ? '' : (r.unitPrice || '');
+    document.getElementById('ef-total').value = r.free ? '' : (r.total || '');
+
+    setEditFreeUI(r.free || false);
+    document.getElementById('edit-modal-overlay').classList.add('open');
+  };
+
+  window.closeEditModal = () => { document.getElementById('edit-modal-overlay').classList.remove('open'); editingRecordId = null; };
+  window.closeEditModalOutside = (e) => { if (e.target.id === 'edit-modal-overlay') closeEditModal(); };
+
+  window.onEditCompanyChange = function() {
+    const coId = document.getElementById('ef-company').value;
+    const co = companies.find(c=>c.id===coId);
+    const efType = document.getElementById('ef-type');
+    const prevType = efType.value;
+    efType.innerHTML = '<option value="">— 选择加工内容 —</option>';
+    if (co) {
+      co.prices.forEach(p => { const o=document.createElement('option'); o.value=p.type; o.textContent=p.type; efType.appendChild(o); });
+    }
+    if (prevType && efType.querySelector(`option[value="${prevType}"]`)) efType.value = prevType;
+    calcEditTotal();
+  };
+
+  window.onEditTypeChange = function() {
+    const coId = document.getElementById('ef-company').value;
+    const type = document.getElementById('ef-type').value;
+    const co = companies.find(c=>c.id===coId);
+    if (!co || !type) return;
+    const pr = co.prices.find(p=>p.type===type);
+    if (pr !== undefined) {
+      if (pr.price === 0) setEditFreeUI(true);
+      else { setEditFreeUI(false); document.getElementById('ef-unit').value = pr.price; }
+    }
+    calcEditTotal();
+  };
+
+  function setEditFreeUI(val) {
+    isEditFree = val;
+    document.getElementById('edit-free-toggle').classList.toggle('on', val);
+    document.getElementById('edit-chkbox').style.opacity = val ? '1' : '0';
+    document.getElementById('ef-unit').disabled = val;
+    document.getElementById('ef-unit').style.opacity = val ? '.4' : '1';
+    calcEditTotal();
+  }
+  window.toggleEditFree = () => setEditFreeUI(!isEditFree);
+
+  window.calcEditTotal = function() {
+    const m = parseFloat(document.getElementById('ef-meters').value)||0;
+    const u = parseFloat(document.getElementById('ef-unit').value)||0;
+    const t = isEditFree ? 0 : +(m*u).toFixed(2);
+    document.getElementById('ef-total').value = isEditFree ? '' : (t || '');
+  };
+
+  window.saveEditRecord = function() {
+    if (!editingRecordId) return;
+    const idx = records.findIndex(r => r.id === editingRecordId);
+    if (idx === -1) { showToast('找不到该记录'); return; }
+
+    const date = document.getElementById('ef-date').value;
+    const order = document.getElementById('ef-order').value.trim();
+    const coId = document.getElementById('ef-company').value;
+    const type = document.getElementById('ef-type').value;
+    const model = document.getElementById('ef-model').value.trim();
+    const code = document.getElementById('ef-code').value.trim();
+    const meters = parseFloat(document.getElementById('ef-meters').value);
+    const unit = parseFloat(document.getElementById('ef-unit').value);
+    const remark = document.getElementById('ef-remark').value.trim();
+    const co = companies.find(c=>c.id===coId);
+
+    if (!date) { showToast('⚠️ 请填写日期'); return; }
+    if (!type) { showToast('⚠️ 请填写加工内容'); return; }
+    if (isNaN(meters) || meters <= 0) { showToast('⚠️ 请填写有效米数'); return; }
+
+    const total = isEditFree ? null : +(meters*(unit||0)).toFixed(2);
+    const companyName = co ? co.name : records[idx].companyName;
+
+    records[idx] = {
+      ...records[idx],
+      date, order, companyId: coId, companyName,
+      type, model, code, meters,
+      unitPrice: isEditFree ? null : (unit || null),
+      total, free: isEditFree, remark
+    };
+
+    saveRecords();
+    closeEditModal();
+    renderRecordsView();
+    renderLeftPanel();
+    showToast('✅ 修改已保存');
+  };
+
+
   function populateExpCompanies() {
     const sel = document.getElementById('exp-company');
     const cur = sel.value;
