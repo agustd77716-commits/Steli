@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加工清单 Pro 2.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --surface2: #f3f4f6;
+      --surface3: #eaecef;
+      --border: #e4e6ea;
+      --border2: #d1d5db;
+      --accent: #111827;
+      --accent-blue: #2563eb;
+      --accent-green: #16a34a;
+      --accent-amber: #d97706;
+      --accent-red: #dc2626;
+      --text: #111827;
+      --text2: #374151;
+      --muted: #6b7280;
+      --muted2: #9ca3af;
+      --radius: 10px;
+      --radius-sm: 7px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+      --shadow: 0 1px 4px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'DM Sans', 'PingFang SC', 'Helvetica Neue', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; height: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ══════════════════════════════════════
+       TOP BAR
+    ══════════════════════════════════════ */
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 20px; height: 56px; flex-shrink: 0; z-index: 10;
+    }
+    .top-bar-left { display: flex; align-items: baseline; gap: 10px; flex-shrink: 0; width: 240px; }
+    .app-title { font-size: 17px; font-weight: 800; letter-spacing: -.5px; color: var(--text); }
+    .app-sub { font-size: 11px; color: var(--muted2); letter-spacing: .5px; }
+
+    /* Center tabs */
+    .top-tabs { display: flex; align-items: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+    .top-tab {
+      padding: 7px 22px; border-radius: 7px; font-size: 13px; font-weight: 600;
+      color: var(--muted); cursor: pointer; transition: all .15s; user-select: none; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .top-tab .tab-num {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--surface3); color: var(--muted); font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .top-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+    .top-tab.active .tab-num { background: var(--accent); color: #fff; }
+
+    /* Right: company selector */
+    .top-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; justify-content: flex-end; width: 240px; }
+    .company-label-sm { font-size: 10px; color: var(--muted2); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .company-select-wrap { position: relative; display: flex; align-items: center; gap: 6px; }
+    .company-select-wrap select {
+      appearance: none; -webkit-appearance: none;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 6px 32px 6px 12px;
+      font-size: 13px; font-weight: 700; color: var(--text);
+      font-family: inherit; cursor: pointer; outline: none;
+      transition: border-color .15s;
+    }
+    .company-select-wrap select:focus { border-color: var(--accent-blue); }
+    .company-select-wrap::after {
+      content: '▾'; position: absolute; right: 10px; font-size: 11px; color: var(--muted); pointer-events: none;
+    }
+    .settings-btn {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--surface2);
+      border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; transition: background .15s; flex-shrink: 0;
+      color: var(--muted);
+    }
+    .settings-btn:hover { background: var(--surface3); }
+
+    /* ══════════════════════════════════════
+       MAIN BODY: LEFT + CONTENT
+    ══════════════════════════════════════ */
+    .main-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* LEFT PANEL */
+    .left-panel {
+      width: 240px; flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .left-panel::-webkit-scrollbar { width: 4px; }
+    .left-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    .lp-section { padding: 16px 16px 0; }
+    .lp-section + .lp-section { padding-top: 14px; }
+    .lp-divider { height: 1px; background: var(--border); margin: 14px 16px 0; }
+
+    .lp-title {
+      font-size: 10px; font-weight: 700; color: var(--muted2);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .lp-title::before { content: '◆'; font-size: 7px; color: var(--accent-amber); }
+
+    /* Date filter in left panel */
+    .lp-select {
+      width: 100%; appearance: none; -webkit-appearance: none;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 28px 8px 10px;
+      font-size: 13px; font-weight: 600; color: var(--text); font-family: inherit;
+      cursor: pointer; outline: none; transition: border-color .15s; margin-bottom: 8px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    .lp-select:focus { border-color: var(--accent-blue); }
+
+    .date-range-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+    .date-range-row input[type="date"] {
+      width: 100%; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface2); color: var(--text); font-size: 12px; font-family: inherit;
+      outline: none; transition: border-color .15s; color-scheme: light;
+    }
+    .date-range-row input[type="date"]:focus { border-color: var(--accent-blue); }
+    .date-range-row .sep {
+      font-size: 10px; color: var(--muted2); text-align: center; letter-spacing: .5px; font-weight: 600;
+    }
+    .date-apply-btn {
+      width: 100%; padding: 6px; background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 11px; font-weight: 700; color: var(--text2);
+      cursor: pointer; font-family: inherit; transition: all .15s; text-align: center;
+      letter-spacing: .3px;
+    }
+    .date-apply-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Stats block */
+    .stat-block { margin-bottom: 8px; }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .stat-label { color: var(--muted); }
+    .stat-row .stat-val { font-weight: 700; }
+    .stat-row .stat-val.amber { color: var(--accent-amber); }
+    .stat-row .stat-val.blue { color: var(--accent-blue); }
+    .stat-row .stat-val.dark { color: var(--text); }
+
+    /* Type breakdown */
+    .type-breakdown-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; font-size: 12px;
+    }
+    .type-breakdown-row .tb-left { display: flex; align-items: center; gap: 6px; color: var(--text2); }
+    .type-breakdown-row .tb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .type-breakdown-row .tb-right { font-size: 11px; color: var(--muted); text-align: right; }
+    .type-breakdown-row .tb-amt { font-weight: 700; color: var(--text2); font-size: 12px; }
+
+    /* TOP 10 list */
+    .rank-list { }
+    .rank-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-num {
+      width: 18px; height: 18px; border-radius: 4px; background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: var(--muted); flex-shrink: 0;
+    }
+    .rank-num.top3 { background: var(--accent); color: #fff; }
+    .rank-id { flex: 1; color: var(--text2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-amt { font-weight: 700; color: var(--text); white-space: nowrap; }
+    .see-all { font-size: 11px; color: var(--accent-blue); cursor: pointer; padding: 8px 0 0; display: block; text-align: right; font-weight: 600; }
+    .see-all:hover { text-decoration: underline; }
+
+    /* ══════════════════════════════════════
+       CONTENT AREA
+    ══════════════════════════════════════ */
+    .content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    .scroll-area { flex: 1; overflow-y: auto; padding: 20px; }
+    .scroll-area::-webkit-scrollbar { width: 6px; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ══════════════════════════════════════
+       VIEW: 记录查看
+    ══════════════════════════════════════ */
+    .view-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .view-header-left { display: flex; align-items: center; gap: 8px; }
+    .view-title { font-size: 14px; font-weight: 700; color: var(--text2); }
+    .view-hint { font-size: 11px; color: var(--muted2); }
+
+    .refresh-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; background: var(--surface2);
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer;
+      transition: all .15s; font-family: inherit;
+    }
+    .refresh-btn:hover { border-color: var(--border2); background: var(--surface3); }
+
+    /* Date chips scroll */
+    .date-chips { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 2px; scrollbar-width: none; }
+    .date-chips::-webkit-scrollbar { display: none; }
+    .dchip {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--surface); color: var(--muted);
+      cursor: pointer; transition: all .12s; user-select: none;
+    }
+    .dchip:hover { border-color: var(--border2); }
+    .dchip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Day summary bar */
+    .day-summary-bar {
+      display: flex; align-items: center; gap: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 11px 16px; margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .day-summary-bar .ds-date { font-size: 13px; font-weight: 700; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+    .day-summary-bar .ds-date::before { content: '📅'; font-size: 13px; }
+    .day-summary-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .day-summary-item .dsv { font-weight: 700; font-size: 13px; }
+    .day-summary-item .dsv.amber { color: var(--accent-amber); }
+    .day-summary-item .dsv.blue { color: var(--accent-blue); }
+    .day-summary-item .dsv.green { color: var(--accent-green); }
+
+    /* Company group */
+    .co-group { margin-bottom: 16px; }
+    .co-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0; padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .co-group-header .co-name-row { display: flex; align-items: center; gap: 8px; }
+    .co-icon { font-size: 14px; }
+    .co-name-text { font-size: 14px; font-weight: 700; color: var(--text); }
+    .co-group-stats { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+    .co-group-stats .csv { font-weight: 700; }
+    .co-group-stats .csv.amber { color: var(--accent-amber); }
+    .co-group-stats .csv.blue { color: var(--accent-blue); }
+    .co-group-stats .csv.green { color: var(--accent-green); }
+    .co-group-stats .csv.cnt { color: var(--text2); }
+
+    /* Table */
+    .rec-table-wrap {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+      overflow: hidden;
+    }
+    .rec-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .rec-table th {
+      background: var(--surface2); padding: 8px 12px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .3px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .rec-table th:last-child, .rec-table td:last-child { text-align: right; }
+    .rec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+    .rec-table tr:last-child td { border-bottom: none; }
+    .rec-table tr:hover td { background: var(--surface2); }
+
+    /* Order sub-header row */
+    .order-subrow td {
+      background: var(--surface2) !important; font-weight: 700;
+      color: var(--text); font-size: 12px; padding: 7px 12px; cursor: pointer;
+    }
+    .order-subrow .order-num { display: flex; align-items: center; gap: 6px; }
+    .order-subrow .order-num::before { content: ''; display: inline-block; width: 0; height: 0; border-left: 5px solid var(--muted); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; transition: transform .2s; margin-right: 2px; }
+    .order-subrow.expanded .order-num::before { transform: rotate(90deg); }
+    .order-sub-total { color: var(--accent-amber); }
+    .order-sub-meters { color: var(--accent-blue); }
+
+    /* data row */
+    .rec-td-type { color: var(--text); font-weight: 600; }
+    .rec-td-model { color: var(--text2); }
+    .rec-td-num { font-variant-numeric: tabular-nums; }
+    .rec-td-amt { font-weight: 700; color: var(--text); }
+    .rec-td-free { color: var(--accent-blue); font-size: 11px; background: rgba(37,99,235,.07); padding: 2px 7px; border-radius: 10px; }
+    .del-btn { background: none; border: none; color: var(--muted2); font-size: 15px; cursor: pointer; padding: 2px 6px; transition: color .15s; }
+    .del-btn:hover { color: var(--accent-red); }
+
+    .table-hint { font-size: 11px; color: var(--muted2); padding: 8px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+
+    /* ── Bottom summary section ── */
+    .bottom-summary { margin-top: 20px; display: flex; gap: 16px; align-items: flex-start; }
+    .summary-table-wrap { flex: 1; }
+    .summary-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .summary-table th {
+      background: var(--surface2); padding: 9px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .3px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-table th:not(:first-child) { text-align: right; }
+    .summary-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+    .summary-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+    .summary-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--text); background: var(--surface2); }
+    .summary-table tr:hover td { background: var(--surface2); }
+    .summary-table .pct { color: var(--muted); }
+    .summary-table .amt-val { font-weight: 700; color: var(--text); }
+    .summary-table .th-arrow { font-size: 9px; opacity: .5; margin-left: 2px; }
+
+    /* pie chart area */
+    .pie-wrap { width: 200px; flex-shrink: 0; }
+    .pie-title { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .pie-title::before { content: '◆'; font-size: 8px; color: var(--accent-amber); }
+    #pie-canvas { border-radius: 50%; }
+    .pie-legend { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .pie-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+    .pie-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pie-legend-pct { margin-left: auto; font-weight: 700; color: var(--muted); }
+
+    /* ══════════════════════════════════════
+       VIEW: 数据录入
+    ══════════════════════════════════════ */
+    .entry-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .entry-col { flex: 1; }
+    .entry-preview { width: 300px; flex-shrink: 0; }
+
+    .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+    .form-section-title {
+      font-size: 10px; font-weight: 700; color: var(--muted2); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .field-grid { display: grid; gap: 10px; margin-bottom: 10px; }
+    .field-grid.col2 { grid-template-columns: 1fr 1fr; }
+    .field-grid.col3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-grid.col1 { grid-template-columns: 1fr; }
+
+    .field label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 5px; }
+    .field input, .field select {
+      width: 100%; padding: 9px 12px; background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-family: inherit;
+      outline: none; appearance: none; -webkit-appearance: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent-blue); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,.07); }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px;
+    }
+    .field input[readonly] { color: var(--muted); background: var(--surface2); cursor: default; }
+    .field input::placeholder { color: var(--muted2); }
+
+    .free-toggle {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; font-size: 13px; color: var(--text2); user-select: none; transition: all .15s;
+    }
+    .free-toggle.on { border-color: var(--accent-blue); background: rgba(37,99,235,.04); }
+    .chkbox {
+      width: 17px; height: 17px; border: 2px solid var(--border2); border-radius: 4px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; transition: all .15s; color: #fff; font-weight: 700;
+    }
+    .free-toggle.on .chkbox { background: var(--accent-blue); border-color: var(--accent-blue); }
+
+    .amount-banner {
+      background: var(--accent); border-radius: var(--radius); padding: 16px 18px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+    }
+    .amount-banner .lbl { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 4px; }
+    .amount-banner .val { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .amount-banner .mval { font-size: 20px; font-weight: 700; color: rgba(255,255,255,.65); }
+
+    .btn { width: 100%; padding: 11px; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all .15s; }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1f2937; }
+    .btn-green { background: var(--accent-green); color: #fff; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border2); color: var(--text2); font-weight: 600; }
+    .btn-outline:hover { border-color: var(--accent); color: var(--text); }
+    .btn-sm { padding: 7px 14px; font-size: 12px; width: auto; border-radius: 20px; }
+
+    .model-suggest {
+      position: absolute; background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-md); z-index: 50;
+      max-height: 160px; overflow-y: auto; width: 100%; display: none; top: 100%; margin-top: 2px;
+    }
+    .model-suggest-item { padding: 8px 12px; cursor: pointer; font-size: 13px; color: var(--text); }
+    .model-suggest-item:hover { background: var(--surface2); }
+
+    /* ══════════════════════════════════════
+       VIEW: 导出报表
+    ══════════════════════════════════════ */
+    .export-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .export-col-left { flex: 1; }
+    .export-col-right { width: 280px; flex-shrink: 0; }
+
+    .type-check-group { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+    .type-check-item {
+      display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600;
+      color: var(--text2); cursor: pointer; padding: 5px 10px; border-radius: 20px;
+      background: var(--surface2); border: 1.5px solid var(--border); transition: all .12s;
+    }
+    .type-check-item:has(input:checked) { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .type-check-item input { display: none; }
+
+    .summary-rows { background: var(--surface2); border-radius: var(--radius-sm); border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; }
+    .s-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .s-row:last-child { border-bottom: none; font-weight: 700; }
+    .s-val { font-weight: 700; color: var(--text); }
+
+    /* ══════════════════════════════════════
+       VIEW: 公司管理
+    ══════════════════════════════════════ */
+    .company-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm); transition: box-shadow .15s; }
+    .company-card:hover { box-shadow: var(--shadow-md); }
+    .company-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: var(--text2); flex-shrink: 0; border: 1px solid var(--border); }
+    .company-info { flex: 1; min-width: 0; }
+    .company-info .co-name-big { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .company-info .co-meta { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .company-actions { display: flex; gap: 7px; }
+
+    /* ══════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; backdrop-filter: blur(3px); }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: #fff; border-radius: 16px; width: 480px; max-width: calc(100vw - 32px); padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.15); transform: scale(.95) translateY(8px); transition: transform .2s; max-height: 85vh; overflow-y: auto; }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+    .modal-close { background: var(--surface2); border: none; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+    .modal-close:hover { background: var(--surface3); }
+
+    .price-list { margin-bottom: 12px; }
+    .price-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; border: 1px solid var(--border); }
+    .price-row input { flex: 1; background: transparent; border: none; color: var(--text); font-size: 13px; font-family: inherit; outline: none; padding: 0; }
+    .price-row input.price-input { width: 70px; flex: none; text-align: right; font-weight: 700; }
+    .price-row .pr-label { font-size: 11px; color: var(--muted); width: 16px; text-align: center; }
+    .pr-del { background: none; border: none; color: var(--muted2); font-size: 16px; cursor: pointer; padding: 2px; transition: color .15s; }
+    .pr-del:hover { color: var(--accent-red); }
+
+    /* ══════════════════════════════════════
+       BOTTOM NAV (原版四按钮)
+    ══════════════════════════════════════ */
+    .bottom-nav {
+      display: flex; background: var(--surface);
+      border-top: 1px solid var(--border); flex-shrink: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .nav-item {
+      flex: 1; padding: 10px 8px 8px; text-align: center;
+      cursor: pointer; transition: all .12s; user-select: none;
+    }
+    .nav-item .ni { font-size: 19px; display: block; margin-bottom: 2px; }
+    .nav-item .nl { font-size: 10px; color: var(--muted); font-weight: 500; letter-spacing: .2px; }
+    .nav-item.active .nl { color: var(--accent); font-weight: 700; }
+    .nav-item.active .ni { transform: scale(1.1); }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+      background: var(--accent); color: #fff; padding: 10px 20px;
+      border-radius: 24px; font-size: 13px; font-weight: 600;
+      opacity: 0; transition: all .2s; z-index: 999; white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ══════════════════════════════════════
+       MISC
+    ══════════════════════════════════════ */
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty .ico { font-size: 40px; margin-bottom: 10px; opacity: .4; }
+    .empty p { font-size: 13px; }
+
+    input[type="date"] { color-scheme: light; }
+  </style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="app-title">加工清单 Pro 2.0</div>
+    <div class="app-sub">专业 · 高效 · 精准</div>
+  </div>
+
+  <div class="top-tabs">
+    <div class="top-tab active" onclick="switchView('entry')">
+      <div class="tab-num">①</div> 数据录入
+    </div>
+    <div class="top-tab" onclick="switchView('records')">
+      <div class="tab-num">②</div> 记录查看
+    </div>
+    <div class="top-tab" onclick="switchView('export')">
+      <div class="tab-num">③</div> 导出报表
+    </div>
+  </div>
+
+  <div class="top-bar-right">
+    <div class="company-label-sm">当前公司</div>
+    <div class="company-select-wrap">
+      <select id="hdr-company-sel" onchange="onHeaderCompanyChange()">
+        <option value="">— 选择公司 —</option>
+      </select>
+    </div>
+    <div class="settings-btn" onclick="switchView('companies')" title="公司管理">⚙</div>
+  </div>
+</div>
+
+<!-- ══ MAIN BODY ══ -->
+<div class="main-body">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel" id="left-panel">
+
+    <!-- Date filter -->
+    <div class="lp-section">
+      <div class="lp-title">日期筛选</div>
+      <select class="lp-select" id="lp-month-sel" onchange="onMonthSelChange()">
+        <option value="thisMonth">本月</option>
+        <option value="lastMonth">上月</option>
+        <option value="all">全部日期</option>
+        <option value="custom">自定义</option>
+      </select>
+      <div class="date-range-row">
+        <input type="date" id="lp-date-from" onchange="onLpDateChange()">
+        <span class="sep">～～～</span>
+        <input type="date" id="lp-date-to" onchange="onLpDateChange()">
+      </div>
+      <button class="date-apply-btn" onclick="applyLpDate()">📅 应用日期范围</button>
+    </div>
+
+    <div class="lp-divider"></div>
+
+    <!-- Content filter -->
+    <div class="lp-section">
+      <div class="lp-title">加工内容筛选</div>
+      <select class="lp-select" id="lp-type-sel" onchange="renderRecordsView()">
+        <option value="all">全部内容</option>
+      </select>
+    </div>
+
+    <div class="lp-divider"></div>
+
+    <!-- Stats summary -->
+    <div class="lp-section">
+      <div class="lp-title">记选日期范围汇总</div>
+      <div class="stat-block">
+        <div class="stat-row"><span class="stat-label">总金额</span><span class="stat-val amber" id="lp-total-amt">—</span></div>
+        <div class="stat-row"><span class="stat-label">总米数</span><span class="stat-val blue" id="lp-total-m">—</span></div>
+        <div class="stat-row"><span class="stat-label">记录条数</span><span class="stat-val dark" id="lp-total-cnt">—</span></div>
+      </div>
+    </div>
+
+    <div class="lp-divider"></div>
+
+    <!-- Type breakdown -->
+    <div class="lp-section">
+      <div class="lp-title">加工内容汇总 (按米数 / 金额)</div>
+      <div id="lp-type-breakdown"></div>
+    </div>
+
+    <div class="lp-divider"></div>
+
+    <!-- Top 10 order -->
+    <div class="lp-section" style="padding-bottom:16px">
+      <div class="lp-title">销货单号总价汇总 (TOP 10)</div>
+      <div class="rank-list" id="lp-rank-list"></div>
+      <span class="see-all" onclick="switchView('records')">查看全部 ›</span>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- ── 记录查看 VIEW ── -->
+    <div class="scroll-area" id="view-records">
+      <div class="view-header">
+        <div class="view-header-left">
+          <div class="view-title">记录查看</div>
+          <div class="view-hint">（按 日期 → 公司 → 销货单号 → 加工内容）</div>
+        </div>
+        <button class="refresh-btn" onclick="renderRecordsView()">↺ 刷新数据</button>
+      </div>
+
+      <!-- date chips -->
+      <div class="date-chips" id="rec-date-chips"></div>
+
+      <!-- day summary -->
+      <div id="rec-day-summary"></div>
+
+      <!-- records by company -->
+      <div id="rec-content"></div>
+
+      <!-- bottom summary table + pie -->
+      <div class="bottom-summary" id="rec-bottom-summary" style="display:none">
+        <div style="flex:1">
+          <div class="lp-title" style="margin-bottom:10px">加工内容汇总（按内容统计）</div>
+          <table class="summary-table" id="summary-tbl">
+            <thead><tr>
+              <th>加工内容</th>
+              <th>总米数 (m)</th>
+              <th>平均单价 (¥/m) <span class="th-arrow">▲</span></th>
+              <th>总金额 (¥) <span class="th-arrow">▲</span></th>
+              <th>占比</th>
+            </tr></thead>
+            <tbody id="summary-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pie-wrap">
+          <div class="pie-title">占比分布</div>
+          <canvas id="pie-canvas" width="160" height="160"></canvas>
+          <div class="pie-legend" id="pie-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 数据录入 VIEW ── -->
+    <div class="scroll-area" id="view-entry" style="display:none">
+      <div class="entry-layout">
+        <div class="entry-col">
+          <div class="form-card">
+            <div class="form-section-title">基本信息</div>
+            <div class="field-grid col2">
+              <div class="field"><label>日期</label><input type="date" id="f-date"></div>
+              <div class="field"><label>销货单号</label><input type="text" id="f-order" placeholder="如 0113461" inputmode="numeric"></div>
+            </div>
+            <div class="field-grid col1">
+              <div class="field"><label>对接公司</label><select id="f-company" onchange="onCompanyChange()"><option value="">— 请选择公司 —</option></select></div>
+            </div>
+            <div class="field-grid col1">
+              <div class="field"><label>备注</label><input type="text" id="f-remark" placeholder="可选备注信息"></div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-section-title">加工详情</div>
+            <div class="field-grid col1">
+              <div class="field"><label>加工内容</label><select id="f-type" onchange="onTypeChange()"><option value="">— 请先选择公司 —</option></select></div>
+            </div>
+            <div class="field-grid col2">
+              <div class="field" style="position:relative">
+                <label>型号</label>
+                <input type="text" id="f-model" placeholder="输入型号" autocomplete="off" oninput="handleModelInput()" onfocus="handleModelInput()">
+                <div class="model-suggest" id="model-suggest"></div>
+              </div>
+              <div class="field"><label>编号</label><input type="text" id="f-code" placeholder="布料编号"></div>
+            </div>
+            <div class="field-grid col3">
+              <div class="field"><label>米数</label><input type="number" id="f-meters" placeholder="0" inputmode="decimal" oninput="calcTotal()"></div>
+              <div class="field"><label>单价</label><input type="number" id="f-unit" placeholder="自动" step="0.01" inputmode="decimal" oninput="calcTotal()"></div>
+              <div class="field"><label>小计</label><input type="number" id="f-total" placeholder="—" readonly></div>
+            </div>
+            <div class="free-toggle" id="free-toggle" onclick="toggleFree()">
+              <div class="chkbox" id="chkbox">✓</div>
+              <span>不计价格（免费项目）</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="entry-preview">
+          <div class="amount-banner">
+            <div>
+              <div class="lbl">本次金额</div>
+              <div class="val" id="preview-amt">¥ 0.00</div>
+            </div>
+            <div style="text-align:right">
+              <div class="lbl">米数</div>
+              <div class="mval" id="preview-m">0 m</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="submitRecord()">＋ 保存记录</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 导出报表 VIEW ── -->
+    <div class="scroll-area" id="view-export" style="display:none">
+      <div class="export-layout">
+        <div class="export-col-left">
+          <div class="form-card">
+            <div class="form-section-title">筛选条件</div>
+            <div class="field-grid col1"><div class="field"><label>公司</label><select id="exp-company" onchange="onExportCompanyChange()"><option value="">— 全部公司 —</option></select></div></div>
+            <div class="field-grid col2">
+              <div class="field"><label>开始日期</label><input type="date" id="exp-start" onchange="renderExportPreview()"></div>
+              <div class="field"><label>结束日期</label><input type="date" id="exp-end" onchange="renderExportPreview()"></div>
+            </div>
+            <div class="form-section-title" style="margin-top:4px">加工内容筛选</div>
+            <div class="type-check-group" id="type-check-group"></div>
+            <div class="form-section-title">导出字段</div>
+            <div class="type-check-group" id="export-fields">
+              <label class="type-check-item"><input type="checkbox" value="date" checked> 日期</label>
+              <label class="type-check-item"><input type="checkbox" value="order" checked> 单号</label>
+              <label class="type-check-item"><input type="checkbox" value="type" checked> 加工内容</label>
+              <label class="type-check-item"><input type="checkbox" value="model" checked> 型号</label>
+              <label class="type-check-item"><input type="checkbox" value="code" checked> 编号</label>
+              <label class="type-check-item"><input type="checkbox" value="meters" checked> 米数</label>
+              <label class="type-check-item"><input type="checkbox" value="unitPrice" checked> 单价</label>
+              <label class="type-check-item"><input type="checkbox" value="total" checked> 金额</label>
+              <label class="type-check-item"><input type="checkbox" value="remark" checked> 备注</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:10px" onclick="exportExcel()">↓ 导出 Excel 表格</button>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-outline" style="flex:1" onclick="exportAllData()">💾 备份数据</button>
+            <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('import-file').click()">📥 恢复备份</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllData(event)">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('merge-json-file').click()">📎 合并 JSON</button>
+            <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('merge-excel-file').click()">📎 合并 Excel</button>
+            <input type="file" id="merge-json-file" accept=".json" style="display:none" onchange="mergeJsonData(event)">
+            <input type="file" id="merge-excel-file" accept=".xlsx,.xls" style="display:none" onchange="mergeExcelData(event)">
+          </div>
+        </div>
+        <div class="export-col-right">
+          <div class="form-card" id="exp-summary-card" style="display:none">
+            <div class="form-section-title">统计预览</div>
+            <div class="summary-rows" id="exp-summary"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 公司管理 VIEW ── -->
+    <div class="scroll-area" id="view-companies" style="display:none">
+      <div style="max-width:600px">
+        <button class="btn btn-primary" style="margin-bottom:14px;width:auto;padding:10px 20px" onclick="openCompanyModal(null)">＋ 新增公司</button>
+        <div id="company-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /content-area -->
+</div><!-- /main-body -->
+
+<!-- Company modal -->
+<div class="modal-overlay" id="co-modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="co-modal">
+    <div class="modal-title">
+      <span id="modal-title-text">新增公司</span>
+      <button class="modal-close" onclick="closeCompanyModal()">✕</button>
+    </div>
+    <div class="field-grid col1" style="margin-bottom:14px"><div class="field"><label>公司名称</label><input type="text" id="co-name-input" placeholder="如：XX布料厂"></div></div>
+    <div class="form-section-title">加工类型及单价</div>
+    <div class="price-list" id="price-list"></div>
+    <button class="btn btn-outline" style="margin-bottom:16px;font-size:12px" onclick="addPriceRow()">＋ 添加加工类型</button>
+    <div class="form-section-title">必填字段</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px" id="required-fields">
+      <label class="type-check-item"><input type="checkbox" value="date" checked> 日期</label>
+      <label class="type-check-item"><input type="checkbox" value="order"> 销货单号</label>
+      <label class="type-check-item"><input type="checkbox" value="company" checked> 公司</label>
+      <label class="type-check-item"><input type="checkbox" value="type" checked> 加工内容</label>
+      <label class="type-check-item"><input type="checkbox" value="model" checked> 型号</label>
+      <label class="type-check-item"><input type="checkbox" value="code" checked> 编号</label>
+      <label class="type-check-item"><input type="checkbox" value="meters" checked> 米数</label>
+    </div>
+    <button class="btn btn-primary" onclick="saveCompany()">保存</button>
+  </div>
+</div>
+
+<!-- 底部导航栏（原版四按钮） -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="nav-item" id="nav-entry" onclick="switchView('entry')">
+    <span class="ni">＋</span><span class="nl">首页录入</span>
+  </div>
+  <div class="nav-item active" id="nav-records" onclick="switchView('records')">
+    <span class="ni">☰</span><span class="nl">记录查看</span>
+  </div>
+  <div class="nav-item" id="nav-export" onclick="switchView('export')">
+    <span class="ni">↓</span><span class="nl">导出报表</span>
+  </div>
+  <div class="nav-item" id="nav-companies" onclick="switchView('companies')">
+    <span class="ni">🏭</span><span class="nl">公司管理</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const R_KEY = 'jgqd_records_v3';
+  const C_KEY = 'jgqd_companies_v3';
+  const M_KEY = 'jgqd_model_history';
+
+  let records = JSON.parse(localStorage.getItem(R_KEY) || '[]');
+  let companies = JSON.parse(localStorage.getItem(C_KEY) || 'null');
+  let modelHistory = JSON.parse(localStorage.getItem(M_KEY) || '[]');
+
+  if (!companies) {
+    companies = [{
+      id: 'co_' + Date.now(), name: '示例公司A',
+      prices: [{type:'压光1遍',price:0.6},{type:'压光2遍',price:1.0},{type:'洗定',price:1.0},{type:'重新洗定',price:0}],
+      requiredFields: ['date','company','type','model','code','meters']
+    }];
+    saveCompanies();
+  }
+  companies.forEach(c => { if (!c.requiredFields) c.requiredFields = ['date','company','type','model','code','meters']; });
+  saveCompanies();
+
+  function saveRecords() { localStorage.setItem(R_KEY, JSON.stringify(records)); }
+  function saveCompanies() { localStorage.setItem(C_KEY, JSON.stringify(companies)); }
+  function saveModelHistory() { localStorage.setItem(M_KEY, JSON.stringify(modelHistory)); }
+
+  let isFree = false;
+  let currentView = 'records';
+  let editingCoId = null;
+  let modalPriceRows = [];
+
+  // Filter state
+  let filterDateFrom = '';
+  let filterDateTo = '';
+  let filterType = 'all';
+  let filterSelectedDate = ''; // for date chips
+
+  // Pie colors
+  const PIE_COLORS = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777'];
+
+  // ── INIT ──────────────────────────────
+  window.onload = () => {
+    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+    setFreeUI(false);
+    populateFormCompanies();
+    populateExpCompanies();
+    populateHdrCompanies();
+    renderCompanyList();
+    resetExportDateRange();
+    initLpDates();
+    renderRecordsView();
+    renderLeftPanel();
+  };
+
+  function initLpDates() {
+    const now = new Date();
+    const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+    const lastDay = new Date(y, now.getMonth()+1, 0).getDate();
+    filterDateFrom = `${y}-${m}-01`;
+    filterDateTo = `${y}-${m}-${String(lastDay).padStart(2,'0')}`;
+    document.getElementById('lp-date-from').value = filterDateFrom;
+    document.getElementById('lp-date-to').value = filterDateTo;
+  }
+
+  function resetExportDateRange() {
+    const now = new Date();
+    const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+    document.getElementById('exp-start').value = `${y}-${m}-01`;
+    document.getElementById('exp-end').value = `${y}-${m}-${String(new Date(y,now.getMonth()+1,0).getDate()).padStart(2,'0')}`;
+    renderExportPreview();
+  }
+
+  // ── VIEW SWITCHING ────────────────────
+  window.switchView = function(name) {
+    currentView = name;
+    ['records','entry','export','companies'].forEach(v => {
+      document.getElementById('view-'+v).style.display = v===name ? 'block' : 'none';
+    });
+    // Sync top tabs
+    document.querySelectorAll('.top-tab').forEach((t,i) => {
+      t.classList.toggle('active', ['entry','records','export'][i] === name);
+    });
+    // Sync bottom nav
+    ['entry','records','export','companies'].forEach(v => {
+      const el = document.getElementById('nav-'+v);
+      if (el) el.classList.toggle('active', v === name);
+    });
+    if (name === 'records') renderRecordsView();
+    if (name === 'export') { populateExpCompanies(); onExportCompanyChange(); }
+    if (name === 'companies') renderCompanyList();
+  };
+
+  // ── LEFT PANEL ────────────────────────
+  window.onMonthSelChange = function() {
+    const val = document.getElementById('lp-month-sel').value;
+    const now = new Date();
+    if (val === 'thisMonth') {
+      const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+      filterDateFrom = `${y}-${m}-01`;
+      filterDateTo = `${y}-${m}-${String(new Date(y,now.getMonth()+1,0).getDate()).padStart(2,'0')}`;
+    } else if (val === 'lastMonth') {
+      const d = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0');
+      filterDateFrom = `${y}-${m}-01`;
+      filterDateTo = `${y}-${m}-${String(new Date(y,d.getMonth()+1,0).getDate()).padStart(2,'0')}`;
+    } else if (val === 'all') {
+      filterDateFrom = ''; filterDateTo = '';
+    }
+    document.getElementById('lp-date-from').value = filterDateFrom;
+    document.getElementById('lp-date-to').value = filterDateTo;
+    renderRecordsView(); renderLeftPanel();
+  };
+
+  window.onLpDateChange = function() {
+    document.getElementById('lp-month-sel').value = 'custom';
+  };
+  window.applyLpDate = function() {
+    filterDateFrom = document.getElementById('lp-date-from').value;
+    filterDateTo = document.getElementById('lp-date-to').value;
+    filterSelectedDate = '';
+    renderRecordsView(); renderLeftPanel();
+  };
+
+  function getFilteredRecords(extraDateFilter) {
+    let data = records;
+    const df = extraDateFilter || filterDateFrom;
+    const dt = extraDateFilter ? '' : filterDateTo;
+    if (df) data = data.filter(r => r.date >= df);
+    if (dt) data = data.filter(r => r.date <= dt);
+    if (filterType !== 'all') data = data.filter(r => r.type === filterType);
+    return data;
+  }
+
+  function renderLeftPanel() {
+    const data = getFilteredRecords();
+    const paid = data.filter(r => !r.free);
+    const totalAmt = paid.reduce((s,r) => s+(r.total||0), 0);
+    const totalM = data.reduce((s,r) => s+r.meters, 0);
+
+    document.getElementById('lp-total-amt').textContent = `¥ ${totalAmt.toFixed(2)}`;
+    document.getElementById('lp-total-m').textContent = `${totalM.toFixed(0)} m`;
+    document.getElementById('lp-total-cnt').textContent = `${data.length} 条`;
+
+    // type breakdown
+    const typeMap = {};
+    data.forEach(r => {
+      if (!typeMap[r.type]) typeMap[r.type] = {m:0, amt:0};
+      typeMap[r.type].m += r.meters;
+      if (!r.free) typeMap[r.type].amt += (r.total||0);
+    });
+    const types = Object.entries(typeMap);
+    const breakdown = document.getElementById('lp-type-breakdown');
+    if (!types.length) { breakdown.innerHTML = '<div style="font-size:12px;color:var(--muted2)">暂无数据</div>'; }
+    else {
+      breakdown.innerHTML = types.map(([t,v], i) => `
+        <div class="type-breakdown-row">
+          <div class="tb-left"><div class="tb-dot" style="background:${PIE_COLORS[i%PIE_COLORS.length]}"></div>${t}</div>
+          <div class="tb-right">
+            <div>${v.m.toFixed(0)} m</div>
+            <div class="tb-amt">¥${v.amt.toFixed(2)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    // populate type select
+    const typeSel = document.getElementById('lp-type-sel');
+    const curType = typeSel.value;
+    typeSel.innerHTML = '<option value="all">全部内容</option>';
+    types.forEach(([t]) => {
+      const o = document.createElement('option'); o.value=t; o.textContent=t; typeSel.appendChild(o);
+    });
+    if (curType && types.some(([t]) => t===curType)) typeSel.value = curType;
+
+    // top 10 orders
+    const orderMap = {};
+    records.forEach(r => {
+      if (!r.order) return;
+      if (!orderMap[r.order]) orderMap[r.order] = 0;
+      if (!r.free) orderMap[r.order] += (r.total||0);
+    });
+    const top10 = Object.entries(orderMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const rankList = document.getElementById('lp-rank-list');
+    if (!top10.length) { rankList.innerHTML = '<div style="font-size:12px;color:var(--muted2)">暂无数据</div>'; }
+    else {
+      rankList.innerHTML = top10.map(([id,amt],i) => `
+        <div class="rank-row">
+          <div class="rank-num ${i<3?'top3':''}">${i+1}</div>
+          <div class="rank-id">${id}</div>
+          <div class="rank-amt">¥${amt.toFixed(2)}</div>
+        </div>`).join('');
+    }
+  }
+
+  // ── RECORDS VIEW ──────────────────────
+  function renderRecordsView() {
+    filterType = document.getElementById('lp-type-sel').value || 'all';
+    renderLeftPanel();
+
+    const allFiltered = getFilteredRecords();
+
+    // date chips: unique dates in range
+    const dates = [...new Set(allFiltered.map(r=>r.date))].sort().reverse();
+    const chipsEl = document.getElementById('rec-date-chips');
+
+    // If no date chip selected, default to most recent date
+    if (!filterSelectedDate && dates.length > 0) filterSelectedDate = dates[0];
+
+    chipsEl.innerHTML = dates.map(d => {
+      const [,mo,dy] = d.split('-');
+      const label = parseInt(mo)+'月'+parseInt(dy)+'日';
+      return `<div class="dchip${filterSelectedDate===d?' active':''}" onclick="selectDateChip('${d}')">${label}</div>`;
+    }).join('');
+
+    // Day summary
+    const dayData = allFiltered.filter(r => r.date === filterSelectedDate);
+    const dayAmt = dayData.filter(r=>!r.free).reduce((s,r)=>s+(r.total||0),0);
+    const dayM = dayData.reduce((s,r)=>s+r.meters,0);
+    const daySummaryEl = document.getElementById('rec-day-summary');
+    if (filterSelectedDate && dayData.length) {
+      const dateObj = new Date(filterSelectedDate+'T00:00:00');
+      const weekday = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][dateObj.getDay()];
+      daySummaryEl.innerHTML = `
+        <div class="day-summary-bar">
+          <div class="ds-date">${filterSelectedDate.replace(/-/g,'年').replace(/年(\d+)年/,'年$1月').replace(/年(\d+)$/,'日').replace(/(\d{4})年(\d+)月(\d+)日/, '$1年$2月$3日')} （${weekday}）</div>
+          <div class="day-summary-item">总金额：<span class="dsv amber">¥ ${dayAmt.toFixed(2)}</span></div>
+          <div class="day-summary-item">总米数：<span class="dsv blue">${dayM.toFixed(0)} m</span></div>
+          <div class="day-summary-item">记录数：<span class="dsv green">${dayData.length} 条</span></div>
+        </div>`;
+    } else {
+      daySummaryEl.innerHTML = '';
+    }
+
+    // Records content: group by company → order
+    const viewData = filterSelectedDate ? allFiltered.filter(r=>r.date===filterSelectedDate) : allFiltered;
+    const recContent = document.getElementById('rec-content');
+    if (!viewData.length) {
+      recContent.innerHTML = '<div class="empty"><div class="ico">📭</div><p>暂无记录</p></div>';
+      document.getElementById('rec-bottom-summary').style.display = 'none';
+      return;
+    }
+
+    // Group by company
+    const coGroups = {};
+    viewData.forEach(r => {
+      const key = r.companyId || r.companyName;
+      if (!coGroups[key]) coGroups[key] = { name: r.companyName, records: [] };
+      coGroups[key].records.push(r);
+    });
+
+    let html = '';
+    Object.values(coGroups).forEach(cg => {
+      const cgPaid = cg.records.filter(r=>!r.free);
+      const cgAmt = cgPaid.reduce((s,r)=>s+(r.total||0),0);
+      const cgM = cg.records.reduce((s,r)=>s+r.meters,0);
+      const cgCnt = cg.records.length;
+
+      // group by order
+      const orderGroups = {};
+      cg.records.forEach(r => {
+        const ok = r.order || '无单号';
+        if (!orderGroups[ok]) orderGroups[ok] = [];
+        orderGroups[ok].push(r);
+      });
+
+      html += `<div class="co-group">
+        <div class="co-group-header">
+          <div class="co-name-row"><span class="co-icon">🏢</span><span class="co-name-text">${cg.name}</span></div>
+          <div class="co-group-stats">
+            <span>小计：<span class="csv amber">¥ ${cgAmt.toFixed(2)}</span></span>
+            <span>米米数：<span class="csv blue">${cgM.toFixed(0)} m</span></span>
+            <span>记录数：<span class="csv green cnt">${cgCnt} 条</span></span>
+          </div>
+        </div>
+        <div class="rec-table-wrap">
+          <table class="rec-table">
+            <thead><tr>
+              <th>销货单号</th><th>加工内容</th><th>型号 / 备注</th>
+              <th>米数 (m)</th><th>单价 (¥/m)</th><th>金额 (¥)</th><th></th>
+            </tr></thead>
+            <tbody>`;
+
+      Object.entries(orderGroups).forEach(([orderKey, items]) => {
+        const oAmt = items.filter(r=>!r.free).reduce((s,r)=>s+(r.total||0),0);
+        const oM = items.reduce((s,r)=>s+r.meters,0);
+        const gId = 'og_'+Math.random().toString(36).slice(2);
+        html += `<tr class="order-subrow expanded" onclick="toggleOrderGroup('${gId}',this)">
+          <td colspan="3"><div class="order-num">${orderKey}</div></td>
+          <td class="order-sub-meters">${oM.toFixed(0)} m</td>
+          <td colspan="2" class="order-sub-total">小计：¥ ${oAmt.toFixed(2)}</td>
+          <td></td>
+        </tr>`;
+        items.forEach(r => {
+          const modelRemark = [r.model, r.remark].filter(Boolean).join(' / ');
+          html += `<tr class="rec-data-row" data-group="${gId}">
+            <td></td>
+            <td class="rec-td-type">${r.type}</td>
+            <td class="rec-td-model">${modelRemark||'—'}</td>
+            <td class="rec-td-num">${r.meters.toFixed(2)}</td>
+            <td class="rec-td-num">${r.free ? '—' : (r.unitPrice||'—')}</td>
+            <td class="rec-td-amt">${r.free ? '<span class="rec-td-free">免费</span>' : '¥'+r.total}</td>
+            <td><button class="del-btn" onclick="delRecord(${r.id});event.stopPropagation()">×</button></td>
+          </tr>`;
+        });
+      });
+
+      html += `</tbody></table>
+        <div class="table-hint">* 点击销货单号可展开或收起该单号下的加工内容明细</div>
+        </div></div>`;
+    });
+    recContent.innerHTML = html;
+
+    // Bottom summary table + pie
+    renderBottomSummary(allFiltered);
+  }
+
+  window.selectDateChip = function(date) {
+    filterSelectedDate = date;
+    renderRecordsView();
+  };
+
+  window.toggleOrderGroup = function(gId, row) {
+    const rows = document.querySelectorAll(`[data-group="${gId}"]`);
+    const isExpanded = row.classList.contains('expanded');
+    row.classList.toggle('expanded', !isExpanded);
+    rows.forEach(r => r.style.display = isExpanded ? 'none' : '');
+  };
+
+  function renderBottomSummary(data) {
+    const typeMap = {};
+    data.forEach(r => {
+      if (!typeMap[r.type]) typeMap[r.type] = {m:0, amt:0, prices:[]};
+      typeMap[r.type].m += r.meters;
+      if (!r.free) { typeMap[r.type].amt += (r.total||0); if(r.unitPrice) typeMap[r.type].prices.push(r.unitPrice); }
+    });
+    const totalAmt = Object.values(typeMap).reduce((s,v)=>s+v.amt,0);
+    const entries = Object.entries(typeMap);
+
+    if (!entries.length) { document.getElementById('rec-bottom-summary').style.display='none'; return; }
+    document.getElementById('rec-bottom-summary').style.display = 'flex';
+
+    // Table
+    const tbody = document.getElementById('summary-tbody');
+    tbody.innerHTML = entries.map(([t,v]) => {
+      const avgPrice = v.prices.length ? (v.prices.reduce((s,p)=>s+p,0)/v.prices.length).toFixed(2) : '—';
+      const pct = totalAmt > 0 ? ((v.amt/totalAmt)*100).toFixed(1)+'%' : '—';
+      return `<tr>
+        <td>${t}</td>
+        <td>${v.m.toFixed(2)}</td>
+        <td>${avgPrice}</td>
+        <td class="amt-val">${v.amt.toFixed(2)}</td>
+        <td class="pct">${pct}</td>
+      </tr>`;
+    }).join('') + `<tr>
+      <td>合计</td>
+      <td>${data.reduce((s,r)=>s+r.meters,0).toFixed(2)}</td>
+      <td>—</td>
+      <td>${totalAmt.toFixed(2)}</td>
+      <td>100%</td>
+    </tr>`;
+
+    // Pie chart
+    const canvas = document.getElementById('pie-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,160,160);
+    const cx=80, cy=80, r=70;
+    let startAngle = -Math.PI/2;
+    const pieData = entries.map(([t,v],i) => ({label:t, val:v.amt, color:PIE_COLORS[i%PIE_COLORS.length]}));
+    pieData.forEach(d => {
+      const slice = totalAmt > 0 ? (d.val/totalAmt)*Math.PI*2 : 0;
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,startAngle,startAngle+slice);
+      ctx.closePath(); ctx.fillStyle=d.color; ctx.fill();
+      startAngle += slice;
+    });
+    // Center hole
+    ctx.beginPath(); ctx.arc(cx,cy,32,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+
+    const legendEl = document.getElementById('pie-legend');
+    legendEl.innerHTML = pieData.map(d => {
+      const pct = totalAmt > 0 ? ((d.val/totalAmt)*100).toFixed(1) : '0';
+      return `<div class="pie-legend-item"><div class="pie-legend-dot" style="background:${d.color}"></div><span>${d.label}</span><span class="pie-legend-pct">${pct}%</span></div>`;
+    }).join('');
+  }
+
+  // ── ENTRY FORM ────────────────────────
+  function populateFormCompanies() {
+    const sel = document.getElementById('f-company');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— 请选择公司 —</option>';
+    companies.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+    if (cur && companies.some(c=>c.id===cur)) sel.value=cur;
+  }
+
+  function populateHdrCompanies() {
+    const sel = document.getElementById('hdr-company-sel');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— 选择公司 —</option>';
+    companies.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+    if (cur && companies.some(c=>c.id===cur)) sel.value=cur;
+  }
+
+  window.onHeaderCompanyChange = function() {
+    const coId = document.getElementById('hdr-company-sel').value;
+    document.getElementById('f-company').value = coId;
+    onCompanyChange();
+  };
+
+  window.onCompanyChange = function() {
+    const coId = document.getElementById('f-company').value;
+    document.getElementById('hdr-company-sel').value = coId;
+    const co = companies.find(c=>c.id===coId);
+    const typeSel = document.getElementById('f-type');
+    typeSel.innerHTML = '';
+    if (!co) { typeSel.innerHTML='<option value="">— 请先选择公司 —</option>'; document.getElementById('f-unit').value=''; calcTotal(); return; }
+    typeSel.innerHTML = '<option value="">— 选择加工内容 —</option>';
+    co.prices.forEach(p => { const o=document.createElement('option'); o.value=p.type; o.textContent=p.type; typeSel.appendChild(o); });
+    calcTotal();
+  };
+
+  window.onTypeChange = function() {
+    const coId = document.getElementById('f-company').value;
+    const type = document.getElementById('f-type').value;
+    const co = companies.find(c=>c.id===coId);
+    if (!co || !type) return;
+    const pr = co.prices.find(p=>p.type===type);
+    if (pr!==undefined) {
+      if (pr.price===0) setFreeUI(true);
+      else { setFreeUI(false); document.getElementById('f-unit').value=pr.price; }
+    }
+    calcTotal();
+  };
+
+  function setFreeUI(val) {
+    isFree = val;
+    document.getElementById('free-toggle').classList.toggle('on', val);
+    document.getElementById('chkbox').style.opacity = val ? '1' : '0';
+    document.getElementById('f-unit').disabled = val;
+    document.getElementById('f-unit').style.opacity = val ? '.4' : '1';
+    calcTotal();
+  }
+  window.toggleFree = () => setFreeUI(!isFree);
+
+  function calcTotal() {
+    const m = parseFloat(document.getElementById('f-meters').value)||0;
+    const u = parseFloat(document.getElementById('f-unit').value)||0;
+    const t = isFree ? 0 : +(m*u).toFixed(2);
+    document.getElementById('f-total').value = isFree ? '' : (t||'');
+    document.getElementById('preview-amt').textContent = isFree ? '免  费' : `¥ ${t.toFixed(2)}`;
+    document.getElementById('preview-m').textContent = m+' m';
+  }
+  window.calcTotal = calcTotal;
+
+  window.handleModelInput = function() {
+    const input = document.getElementById('f-model');
+    const val = input.value.trim().toLowerCase();
+    const suggest = document.getElementById('model-suggest');
+    if (!val) { suggest.style.display='none'; return; }
+    const matches = modelHistory.filter(m=>m.toLowerCase().includes(val));
+    if (!matches.length) { suggest.style.display='none'; return; }
+    suggest.innerHTML = matches.map(m=>`<div class="model-suggest-item" onclick="selectModelSuggestion('${m.replace(/'/g,"\\'")}')">${m}</div>`).join('');
+    suggest.style.display='block';
+  };
+  window.selectModelSuggestion = function(model) {
+    document.getElementById('f-model').value = model;
+    document.getElementById('model-suggest').style.display='none';
+    if (!modelHistory.includes(model)) { modelHistory.push(model); saveModelHistory(); }
+  };
+  document.addEventListener('click', e => { if (!e.target.closest('#f-model') && !e.target.closest('#model-suggest')) document.getElementById('model-suggest').style.display='none'; });
+
+  window.submitRecord = function() {
+    const date = document.getElementById('f-date').value;
+    const order = document.getElementById('f-order').value.trim();
+    const coId = document.getElementById('f-company').value;
+    const type = document.getElementById('f-type').value;
+    const model = document.getElementById('f-model').value.trim();
+    const code = document.getElementById('f-code').value.trim();
+    const meters = parseFloat(document.getElementById('f-meters').value);
+    const unit = parseFloat(document.getElementById('f-unit').value);
+    const remark = document.getElementById('f-remark').value.trim();
+    const co = companies.find(c=>c.id===coId);
+
+    if (!co) { showToast('⚠️ 请选择公司'); return; }
+    const required = co.requiredFields||[];
+    const fieldMap = {
+      date:{val:date,name:'日期'}, order:{val:order,name:'销货单号'}, company:{val:coId,name:'公司'},
+      type:{val:type,name:'加工内容'}, model:{val:model,name:'型号'}, code:{val:code,name:'编号'},
+      meters:{val:!isNaN(meters),name:'米数'}
+    };
+    for (let f of required) {
+      if (!fieldMap[f]||!fieldMap[f].val) { showToast(`⚠️ 请填写 ${fieldMap[f]?.name||f}`); return; }
+    }
+    const total = isFree ? null : +(meters*unit).toFixed(2);
+    records.unshift({ id:Date.now(), date, order, companyId:coId, companyName:co.name, type, model, code, meters, unitPrice:isFree?null:unit, total, free:isFree, remark });
+    saveRecords();
+    if (model && !modelHistory.includes(model)) { modelHistory.push(model); saveModelHistory(); }
+    showToast('✅ 已保存');
+    ['f-order','f-code','f-meters','f-model','f-remark'].forEach(id => document.getElementById(id).value='');
+    setFreeUI(false); calcTotal();
+    renderLeftPanel();
+  };
+
+  window.delRecord = function(id) {
+    if (!confirm('确认删除该条记录？')) return;
+    records = records.filter(r=>r.id!==id);
+    saveRecords(); renderRecordsView(); showToast('已删除');
+  };
+
+  // ── EXPORT ────────────────────────────
+  function populateExpCompanies() {
+    const sel = document.getElementById('exp-company');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— 全部公司 —</option>';
+    companies.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+    if (cur && companies.some(c=>c.id===cur)) sel.value=cur;
+  }
+
+  window.onExportCompanyChange = function() { renderTypeChecks(); renderExportPreview(); };
+
+  function renderTypeChecks() {
+    const coId = document.getElementById('exp-company').value;
+    const container = document.getElementById('type-check-group');
+    let types = coId ? (companies.find(c=>c.id===coId)?.prices.map(p=>p.type)||[]) : [...new Set(records.map(r=>r.type))];
+    container.innerHTML = types.map(t=>`<label class="type-check-item"><input type="checkbox" value="${t}" checked onchange="renderExportPreview()"> ${t}</label>`).join('');
+  }
+
+  function getExportFilteredData() {
+    const coId = document.getElementById('exp-company').value;
+    const start = document.getElementById('exp-start').value;
+    const end = document.getElementById('exp-end').value;
+    const checkedTypes = Array.from(document.querySelectorAll('#type-check-group input:checked')).map(i=>i.value);
+    let data = records;
+    if (coId) data=data.filter(r=>r.companyId===coId);
+    if (start) data=data.filter(r=>r.date>=start);
+    if (end) data=data.filter(r=>r.date<=end);
+    if (checkedTypes.length) data=data.filter(r=>checkedTypes.includes(r.type));
+    return data;
+  }
+
+  function renderExportPreview() {
+    const card=document.getElementById('exp-summary-card'), box=document.getElementById('exp-summary');
+    const data=getExportFilteredData();
+    if (!data.length) { card.style.display='none'; return; }
+    card.style.display='block';
+    const totalAmt=data.filter(r=>!r.free).reduce((s,r)=>s+(r.total||0),0);
+    const typeStats={};
+    data.forEach(r=>{
+      if(!typeStats[r.type]) typeStats[r.type]={meters:0,amount:0};
+      typeStats[r.type].meters+=r.meters;
+      if(!r.free) typeStats[r.type].amount+=r.total||0;
+    });
+    let sh='';
+    for(let[type,stats]of Object.entries(typeStats)) sh+=`<div class="s-row"><span>${type}</span><span class="s-val">${stats.meters} m / ¥${stats.amount.toFixed(2)}</span></div>`;
+    box.innerHTML=`<div class="s-row"><span>总金额</span><span class="s-val">¥${totalAmt.toFixed(2)}</span></div><div class="s-row"><span>记录数</span><span class="s-val">${data.length} 条</span></div>${sh}`;
+  }
+
+  window.exportExcel = function() {
+    const data=getExportFilteredData();
+    if(!data.length){showToast('⚠️ 没有符合条件的数据');return;}
+    const coId=document.getElementById('exp-company').value;
+    const start=document.getElementById('exp-start').value, end=document.getElementById('exp-end').value;
+    const coName=coId?(companies.find(c=>c.id===coId)?.name||''):'全部公司';
+    const fieldChecks=document.querySelectorAll('#export-fields input[type=checkbox]');
+    const selectedFields=[];
+    fieldChecks.forEach(cb=>{if(cb.checked)selectedFields.push(cb.value);});
+    if(!selectedFields.length){showToast('⚠️ 请至少选择一个导出字段');return;}
+    const wb=XLSX.utils.book_new();
+    const sorted=[...data].sort((a,b)=>a.date.localeCompare(b.date)||a.order.localeCompare(b.order));
+    const fieldMap={date:'日期',order:'销货单号',type:'加工内容',model:'型号',code:'编号',meters:'米数',unitPrice:'单价',total:'金额',remark:'备注'};
+    const headers=selectedFields.map(f=>fieldMap[f]||f);
+    const rows=[[`公司：${coName}`,...Array(headers.length-1).fill('')],[`日期范围：${start||'...'} 至 ${end||'...'}`,...Array(headers.length-1).fill('')]];
+    rows.push(headers);
+    sorted.forEach(r=>{rows.push(selectedFields.map(f=>{
+      if(f==='date')return r.date;if(f==='order')return r.order;if(f==='type')return r.type;
+      if(f==='model')return r.model;if(f==='code')return r.code;if(f==='meters')return r.meters;
+      if(f==='unitPrice')return r.free?'免费':r.unitPrice;if(f==='total')return r.free?'免费':r.total;
+      if(f==='remark')return r.remark||'';return'';
+    }));});
+    const typeStats={};let totalAmt=0;
+    sorted.forEach(r=>{
+      if(!typeStats[r.type])typeStats[r.type]={meters:0,amount:0};
+      typeStats[r.type].meters+=r.meters;if(!r.free){typeStats[r.type].amount+=r.total||0;totalAmt+=r.total||0;}
+    });
+    rows.push([],['统计汇总',...Array(headers.length-1).fill('')]);
+    for(let[type,stats]of Object.entries(typeStats))rows.push([type,`米数: ${stats.meters} m  金额: ¥${stats.amount.toFixed(2)}`,...Array(headers.length-2).fill('')]);
+    rows.push(['总金额',`¥${totalAmt.toFixed(2)}`,...Array(headers.length-2).fill('')],['记录数',`${sorted.length} 条`,...Array(headers.length-2).fill('')]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=headers.map(()=>({wch:14}));
+    XLSX.utils.book_append_sheet(wb,ws,'记录');
+    XLSX.writeFile(wb,`加工清单_${coName}_${start}_${end}.xlsx`);
+    showToast('✅ 导出成功');
+  };
+
+  window.exportAllData=function(){
+    const data={records,companies,modelHistory};
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    a.download='加工清单全量备份_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();showToast('💾 备份已下载');
+  };
+  window.importAllData=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try{const data=JSON.parse(ev.target.result);
+        if(data.records)records=data.records;if(data.companies)companies=data.companies;if(data.modelHistory)modelHistory=data.modelHistory;
+        saveRecords();saveCompanies();saveModelHistory();
+        showToast('✅ 数据导入成功（已覆盖）');
+        renderRecordsView();populateFormCompanies();populateExpCompanies();populateHdrCompanies();renderCompanyList();renderLeftPanel();
+      }catch(err){showToast('⚠️ 导入失败');}
+    };reader.readAsText(file);e.target.value='';
+  };
+  window.mergeJsonData=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try{const data=JSON.parse(ev.target.result);
+        if(data.records&&Array.isArray(data.records)){
+          const existing=new Set(records.map(r=>r.id));let added=0;
+          data.records.forEach(r=>{if(!existing.has(r.id)){records.push(r);existing.add(r.id);added++;}});
+          if(added>0){saveRecords();showToast(`✅ 已合并 ${added} 条记录`);renderRecordsView();renderLeftPanel();}
+          else showToast('ℹ️ 没有新增记录');
+        }else showToast('⚠️ 文件格式不正确');
+      }catch(err){showToast('⚠️ 文件解析失败');}
+    };reader.readAsText(file);e.target.value='';
+  };
+  window.mergeExcelData=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        const workbook=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+        const jsonData=XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]],{defval:''});
+        if(!jsonData.length){showToast('⚠️ 表格无数据');return;}
+        const map={'日期':'date','销货单号':'order','公司名称':'companyName','加工内容':'type','型号':'model','编号':'code','米数':'meters','单价':'unitPrice','金额':'total','备注':'remark'};
+        const headers=Object.keys(jsonData[0]),mappedKeys={};
+        headers.forEach(h=>{if(map[h])mappedKeys[map[h]]=h;});
+        if(!mappedKeys.date||!mappedKeys.type){showToast('⚠️ 必须包含"日期"和"加工内容"列');return;}
+        let added=0;
+        jsonData.forEach(row=>{
+          const date=row[mappedKeys.date]?.toString().trim();
+          const companyName=row[mappedKeys.companyName]?.toString().trim()||'';
+          const co=companies.find(c=>c.name===companyName);
+          const meters=parseFloat(row[mappedKeys.meters])||0;
+          const unitPrice=mappedKeys.unitPrice?parseFloat(row[mappedKeys.unitPrice])||0:0;
+          const total=mappedKeys.total?parseFloat(row[mappedKeys.total])||0:(meters*unitPrice);
+          records.push({id:Date.now()+Math.random(),date,order:mappedKeys.order?row[mappedKeys.order]?.toString().trim():'',
+            companyId:co?co.id:'',companyName,type:row[mappedKeys.type]?.toString().trim()||'',
+            model:mappedKeys.model?row[mappedKeys.model]?.toString().trim():'',
+            code:mappedKeys.code?row[mappedKeys.code]?.toString().trim():'',
+            meters,unitPrice:unitPrice||null,total:total||null,free:false,
+            remark:mappedKeys.remark?row[mappedKeys.remark]?.toString().trim():''});
+          added++;
+        });
+        if(added>0){saveRecords();showToast(`✅ 成功导入 ${added} 条记录`);renderRecordsView();renderLeftPanel();populateFormCompanies();populateExpCompanies();}
+      }catch(err){showToast('⚠️ 表格读取失败');}
+    };reader.readAsArrayBuffer(file);e.target.value='';
+  };
+
+  // ── COMPANY MANAGEMENT ────────────────
+  function renderCompanyList() {
+    const el=document.getElementById('company-list');
+    if(!companies.length){el.innerHTML='<div class="empty"><div class="ico">🏭</div><p>暂无公司</p></div>';return;}
+    el.innerHTML=companies.map(c=>{
+      const cnt=records.filter(r=>r.companyId===c.id).length;
+      const types=c.prices.map(p=>`${p.type}(¥${p.price})`).join(' · ');
+      return `<div class="company-card">
+        <div class="company-avatar">${c.name.slice(0,1)}</div>
+        <div class="company-info">
+          <div class="co-name-big">${c.name}</div>
+          <div class="co-meta">${cnt} 条记录 · ${types||'暂无价格'}</div>
+        </div>
+        <div class="company-actions">
+          <button class="btn btn-outline btn-sm" onclick="openCompanyModal('${c.id}')">编辑</button>
+          <button class="btn btn-sm" style="background:rgba(220,38,38,.08);color:var(--accent-red);border:1.5px solid rgba(220,38,38,.2)" onclick="deleteCompany('${c.id}')">删除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.openCompanyModal=function(id){
+    editingCoId=id;
+    document.getElementById('modal-title-text').textContent=id?'编辑公司':'新增公司';
+    if(id){
+      const co=companies.find(c=>c.id===id);
+      document.getElementById('co-name-input').value=co.name;
+      modalPriceRows=co.prices.map(p=>({...p}));
+      const req=co.requiredFields||['date','company','type','model','code','meters'];
+      document.querySelectorAll('#required-fields input[type=checkbox]').forEach(cb=>{cb.checked=req.includes(cb.value);});
+    }else{
+      document.getElementById('co-name-input').value='';
+      modalPriceRows=[{type:'压光1遍',price:0.6},{type:'洗定',price:1.0}];
+      document.querySelectorAll('#required-fields input[type=checkbox]').forEach(cb=>{cb.checked=['date','company','type','model','code','meters'].includes(cb.value);});
+    }
+    renderPriceRows();
+    document.getElementById('co-modal-overlay').classList.add('open');
+  };
+  window.closeCompanyModal=()=>document.getElementById('co-modal-overlay').classList.remove('open');
+  window.closeModalOutside=(e)=>{if(e.target.id==='co-modal-overlay')closeCompanyModal();};
+  function renderPriceRows(){
+    document.getElementById('price-list').innerHTML=modalPriceRows.map((p,i)=>`
+      <div class="price-row">
+        <input class="pr-type" type="text" value="${p.type}" placeholder="加工类型名称" oninput="modalPriceRows[${i}].type=this.value">
+        <span class="pr-label">¥</span>
+        <input class="price-input" type="number" value="${p.price}" step="0.01" placeholder="0.00" oninput="modalPriceRows[${i}].price=parseFloat(this.value)||0">
+        <button class="pr-del" onclick="removePriceRow(${i})">×</button>
+      </div>`).join('');
+  }
+  window.addPriceRow=()=>{modalPriceRows.push({type:'',price:0});renderPriceRows();};
+  window.removePriceRow=(i)=>{modalPriceRows.splice(i,1);renderPriceRows();};
+  window.saveCompany=function(){
+    const name=document.getElementById('co-name-input').value.trim();
+    if(!name){showToast('⚠️ 请填写公司名称');return;}
+    document.querySelectorAll('#price-list .price-row').forEach((row,i)=>{
+      if(modalPriceRows[i]){modalPriceRows[i].type=row.querySelector('.pr-type').value.trim();modalPriceRows[i].price=parseFloat(row.querySelector('.price-input').value)||0;}
+    });
+    const prices=modalPriceRows.filter(p=>p.type);
+    const requiredFields=Array.from(document.querySelectorAll('#required-fields input:checked')).map(cb=>cb.value);
+    if(!requiredFields.length){showToast('⚠️ 至少选择一个必填字段');return;}
+    if(editingCoId){const co=companies.find(c=>c.id===editingCoId);co.name=name;co.prices=prices;co.requiredFields=requiredFields;}
+    else companies.push({id:'co_'+Date.now(),name,prices,requiredFields});
+    saveCompanies();closeCompanyModal();renderCompanyList();populateFormCompanies();populateExpCompanies();populateHdrCompanies();showToast('✅ 公司已保存');
+  };
+  window.deleteCompany=function(id){
+    const cnt=records.filter(r=>r.companyId===id).length;
+    if(!confirm(cnt?`该公司有 ${cnt} 条记录，删除公司不会删除记录，确认继续？`:'确认删除？'))return;
+    companies=companies.filter(c=>c.id!==id);saveCompanies();renderCompanyList();populateFormCompanies();populateExpCompanies();populateHdrCompanies();showToast('已删除');
+  };
+
+  function showToast(msg){
+    const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2200);
+  }
+})();
+</script>
+</body>
+</html>
